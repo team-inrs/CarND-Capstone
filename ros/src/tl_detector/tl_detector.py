@@ -7,12 +7,17 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
+import os
 import tf
 import cv2
 import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 3
+
+# See how accurate we are at classifying traffic lights
+traffic_light_successful_classification_count = 0
+traffic_light_classification_count = 0
 
 class TLDetector(object):
     def __init__(self):
@@ -164,8 +169,8 @@ class TLDetector(object):
             return False
 
         # Get classification
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        return self.light_classifier.get_classification(cv_image, traffic_light_state_truth)
+        self.cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        return self.light_classifier.get_classification(self.cv_image, traffic_light_state_truth)
 
 
     def process_traffic_lights(self):
@@ -176,13 +181,15 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        global traffic_light_classification_count
+        global traffic_light_successful_classification_count
         
         # Our closest visible traffic light starts off as none
         closest_traffic_light_waypoint = -1
 
         # Get the list of 'stop line' positions
         stop_line_positions = self.config['stop_line_positions']
-        
+                
         # Find which waypoint the car is closest to
         closest_stop_line_waypoint = -1
         traffic_light_state = TrafficLight.UNKNOWN
@@ -211,7 +218,22 @@ class TLDetector(object):
             if traffic_light_state_truth == 1: real = "Yellow."
             if traffic_light_state_truth == 2: real = "Green."
             if traffic_light_state_truth == 3: real = "Unknown."
-            print(text + "  Real: " + real)
+            error = ""
+            traffic_light_classification_count += 1
+            if traffic_light_state != traffic_light_state_truth:
+                error = "   ******************************"
+            else:
+                traffic_light_successful_classification_count += 1
+            print(text + "  Real: " + real + error)
+
+            # Debug output
+            try:
+                os.makedirs("test/")
+            except:
+                pass
+            cv2.imwrite("test/image_" + str(traffic_light_classification_count) + "_" + text + "_sim_says_" + real + ".png", self.cv_image)
+            
+            print(str(traffic_light_successful_classification_count) + " / " + str(traffic_light_classification_count) + " = " + str(100.0 * traffic_light_successful_classification_count / traffic_light_classification_count) + "%")
 
             # Fake it
             traffic_light_state = traffic_light_state_truth

@@ -8,8 +8,6 @@ from styx_msgs.msg import TrafficLight
 # Start
 print("Running on TensorFlow " + str(tf.__version__))
 
-# Height and width to convert our images to before feeding in
-
 # Set configuration
 train_data_dir = 'train'
 validation_data_dir = 'validation'
@@ -23,6 +21,7 @@ model = Model()
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
+print(model.summary())
 
 # Shear, zoom, and flip training data
 train_datagen = ImageDataGenerator(

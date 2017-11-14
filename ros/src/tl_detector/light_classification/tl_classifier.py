@@ -2,6 +2,7 @@ import rospy
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import cv2
+import os
 from model import Model, image_width, image_height
 from keras.preprocessing.image import img_to_array
 import numpy as np
@@ -51,6 +52,13 @@ class TLClassifier(object):
 
         # Save training data
         else:
+            try:
+                os.makedirs("new/red/")
+                os.makedirs("new/yellow/")
+                os.makedirs("new/green/")
+                os.makedirs("new/none/")
+            except:
+                pass
             if traffic_light_state_truth == TrafficLight.RED:
                 self.red_image_number += 1
                 cv2.imwrite("new/red/image_" + str(self.red_image_number) + ".png", image)
