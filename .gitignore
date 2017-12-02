@@ -4,3 +4,11 @@ build
 devel
 
 profile.tmp
+
+system_integration.app/
+
+traffic_light_bag_files/just_traffic_light.bag
+
+traffic_light_bag_files/loop_with_traffic_light.bag
+
+Ubuntu 64-bit Udacity VM V1.0.0.ova
