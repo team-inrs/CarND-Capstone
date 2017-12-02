@@ -13,7 +13,8 @@ GREEN = 2
 
 class TL_SVM():
     def __init__(self):
-        path = "/home/mikep/Documents/DNN-Tensorflow-Models/Traffic_Light/SVM/svm.p"
+        path = rospy.get_param("traffic_light_classifier")
+        #path = "/home/mikep/Documents/DNN-Tensorflow-Models/Traffic_Light/SVM/svm.p"
 
         with open(path, mode='rb') as f:
             data = pickle.load(f)

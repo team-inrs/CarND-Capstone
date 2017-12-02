@@ -24,7 +24,9 @@ class TLDetector(object):
 
         self.image_number = 0
 
-        path = "/home/mikep/Documents/DNN-Tensorflow-Models/Traffic_Light/Simulator/frozen/frozen_inference_graph.pb"
+        path = rospy.get_param("traffic_light_detector")
+
+        #path = "/home/mikep/Documents/DNN-Tensorflow-Models/Traffic_Light/Simulator/frozen/frozen_inference_graph.pb"
         #path = "/home/mikep/Documents/DNN-Tensorflow-Models/Traffic_Light/Simulator/frozen/optimized.pb"
 
         self.detection_graph = tensorflow.Graph()
