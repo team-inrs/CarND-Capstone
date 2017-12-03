@@ -20,14 +20,17 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 ### Docker Installation
 [Install Docker](https://docs.docker.com/engine/installation/)
 
+### GPU/CUDA support
+[Install nvidia-docker](https://github.com/NVIDIA/nvidia-docker)
+
 Build the docker container
 ```bash
-docker build . -t capstone
+nvidia-docker build . -f Dockerfile.gpu -t capstone-gpu
 ```
 
 Run the docker file
 ```bash
-docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
+nvidia-docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone-gpu
 ```
 
 ### Usage
