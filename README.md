@@ -33,6 +33,13 @@ Run the docker file
 nvidia-docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone-gpu
 ```
 
+### run-cuda script
+
+You can simply start the container or attach to it using the run-cuda script
+```bash
+./run_cuda.sh
+```
+
 ### Usage
 
 1. Clone the project repository
