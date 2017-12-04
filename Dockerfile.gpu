@@ -79,6 +79,7 @@ RUN apt-get install -y git
 # Needed for object-detection
 RUN apt-get install -y python-tk
 RUN pip install matplotlib
+RUN pip install sklearn
 
 # socket io
 RUN apt-get install -y netbase

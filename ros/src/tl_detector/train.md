@@ -39,6 +39,11 @@ sudo nvidia-docker build . -f Dockerfile.gpu -t capstone-gpu
 
 4. Run it
 
+# Build object detection outside of the docker container
+cd CarND-Capstone/models/research
+sudo apt install protobuf-compiler
+protoc object_detection/protos/*.proto --python_out=.
+
 # Run
 sudo ./run-cuda.sh
 
@@ -51,4 +56,8 @@ catkin_make
 source devel/setup.sh
 roslaunch launch/styx.launch
 
+# Or, start training
+cd /udacity/ros/src/tl_detector
+python simulator_conversion.py
+python train.py  -logtostderr --pipeline_config_path=./faster_rcnn_inceptionv2_bosch.config --train_dir=./
  
