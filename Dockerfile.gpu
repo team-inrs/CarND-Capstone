@@ -84,10 +84,20 @@ RUN pip install sklearn
 # socket io
 RUN apt-get install -y netbase
 
+
 RUN mkdir /capstone
 #VOLUME ["/capstone"]
 #VOLUME ["/root/.ros/log/"]
 #WORKDIR /capstone/ros
+WORKDIR /udacity/
+
+#####################################
+RUN apt-get install -y protobuf-compiler python-pil python-lxml
+RUN git clone https://github.com/tensorflow/models.git
+WORKDIR /udacity/models/research/
+RUN pwd
+RUN protoc object_detection/protos/*.proto --python_out=./
+RUN export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 WORKDIR /udacity/
 
 # setup entrypoint
