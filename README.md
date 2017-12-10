@@ -28,16 +28,11 @@ Build the docker container
 nvidia-docker build . -f Dockerfile.gpu -t capstone-gpu
 ```
 
-Run the docker file
-```bash
-nvidia-docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone-gpu
-```
-
 ### run-cuda script
 
-You can simply start the container or attach to it using the run-cuda script
+You can simply start the container or attach to it using the run-cuda or run-devel-cuda script
 ```bash
-./run_cuda.sh
+./run-cuda.sh
 ```
 
 ### Usage

@@ -3,7 +3,7 @@ set -e
 
 # Settings from environment
 UDACITY_SOURCE=${UDACITY_SOURCE:-`pwd`}
-UDACITY_IMAGE=${UDACITY_IMAGE:-capstone-gpu}
+UDACITY_IMAGE=${UDACITY_IMAGE:-capstone-devel-gpu}
 CONTAINER_NAME="capstone"
 
 if [ "$(docker ps -a | grep ${CONTAINER_NAME})" ]; then
