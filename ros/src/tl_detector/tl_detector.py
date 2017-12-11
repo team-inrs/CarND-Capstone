@@ -12,11 +12,13 @@ import cv2
 import yaml
 import math
 import tensorflow
-from light_classification.tl_svm import TL_SVM
 from time import time
 
 
 STATE_COUNT_THRESHOLD = 3
+GREEN = 1
+RED = 2
+YELLOW = 3
 
 class TLDetector(object):
     def __init__(self):
@@ -126,7 +128,7 @@ class TLDetector(object):
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
         #print(light_wp)
-        #print(state)
+        print(state)
         #print()
 
         '''
@@ -229,10 +231,18 @@ class TLDetector(object):
                 new_classes.append(classes[0][i])
                 new_scores.append(scores[0][i])
 
-        PATH = "/home/mikep/Documents/Udacity/Autonomous/CarND-Capstone/"
-        temp_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 
-        if len(new_boxes) != 0: return self.light_classifier.classify(cv_image, new_boxes)
+
+
+        if len(new_classes) != 0:
+            counts = np.bincount(new_classes)
+            light = np.argmax(counts)
+            if light == GREEN:
+                return TrafficLight.GREEN
+            elif light == RED:
+                return TrafficLight.GREEN
+            elif light == YELLOW:
+                return TrafficLight.YELLOW
         else: return TrafficLight.UNKNOWN
 
 
