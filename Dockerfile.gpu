@@ -68,36 +68,21 @@ COPY requirements-gpu.txt ./requirements.txt
 RUN pip install -r requirements.txt
 
 # install required ros dependencies
-RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
-RUN apt-get install -y ros-$ROS_DISTRO-pcl-ros
-RUN apt-get install -y ros-$ROS_DISTRO-image-proc
-
-# Everyone needs vi and git
-RUN apt-get install -y vim
-RUN apt-get install -y git
-
-# Needed for object-detection
-RUN apt-get install -y python-tk
-RUN pip install matplotlib
-RUN pip install sklearn
+RUN apt-get update && apt-get install -y \
+    ros-$ROS_DISTRO-cv-bridge \
+    ros-$ROS_DISTRO-pcl-ros \
+    ros-$ROS_DISTRO-image-proc
 
 # socket io
 RUN apt-get install -y netbase
 
+# development: everyone needs editors and git
+RUN apt-get install -y vim nano git
 
-RUN mkdir /capstone
-#VOLUME ["/capstone"]
-#VOLUME ["/root/.ros/log/"]
-#WORKDIR /capstone/ros
-WORKDIR /udacity/
-
-#####################################
-RUN apt-get install -y protobuf-compiler python-pil python-lxml
-RUN git clone https://github.com/tensorflow/models.git
-WORKDIR /udacity/models/research/
-RUN pwd
-RUN protoc object_detection/protos/*.proto --python_out=./
-RUN export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
+# udacity capstone
+RUN mkdir /udacity
+VOLUME ["/udacity"]
+VOLUME ["/root/.ros/log/"]
 WORKDIR /udacity/
 
 # setup entrypoint
