@@ -253,7 +253,7 @@ class TLDetector(object):
             if light == GREEN:
                 return TrafficLight.GREEN
             elif light == RED:
-                return TrafficLight.GREEN
+                return TrafficLight.RED
             elif light == YELLOW:
                 return TrafficLight.YELLOW
         else: return TrafficLight.UNKNOWN
