@@ -2,7 +2,7 @@
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
-from styx_msgs.msg import TrafficLightArray, TrafficLight
+from styx_msgs.msg import TrafficLightArray, TrafficLight, TL_State
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -12,11 +12,13 @@ import cv2
 import yaml
 import math
 import tensorflow
-from light_classification.tl_svm import TL_SVM
 from time import time
 
 
 STATE_COUNT_THRESHOLD = 3
+GREEN = 1
+RED = 2
+YELLOW = 3
 
 class TLDetector(object):
     def __init__(self):
@@ -83,6 +85,7 @@ class TLDetector(object):
 
         # The publisher of the next red traffic light waypoint index
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.custom_state_pub = rospy.Publisher('/custom_light', TL_State, queue_size=1)
 
         rospy.spin()
 
@@ -126,7 +129,7 @@ class TLDetector(object):
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
         #print(light_wp)
-        #print(state)
+        print(state)
         #print()
 
         '''
@@ -135,6 +138,8 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+        our_msg = TL_State
+        our_light = TrafficLight
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -143,8 +148,18 @@ class TLDetector(object):
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+
+            our_msg.waypoint = Int32(light_wp)
+            our_light.state = state
+            our_msg.light = our_light
+            self.custom_state_pub.publish(our_msg)
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+
+            our_msg.waypoint = Int32(self.last_wp)
+            our_light.state = self.last_state
+            our_msg.light = our_light
+            self.custom_state_pub.publish(our_msg)
         self.state_count += 1
 
     def get_closest_waypoint(self, pose):
@@ -229,10 +244,18 @@ class TLDetector(object):
                 new_classes.append(classes[0][i])
                 new_scores.append(scores[0][i])
 
-        PATH = "/home/mikep/Documents/Udacity/Autonomous/CarND-Capstone/"
-        temp_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 
-        if len(new_boxes) != 0: return self.light_classifier.classify(cv_image, new_boxes)
+
+
+        if len(new_classes) != 0:
+            counts = np.bincount(new_classes)
+            light = np.argmax(counts)
+            if light == GREEN:
+                return TrafficLight.GREEN
+            elif light == RED:
+                return TrafficLight.RED
+            elif light == YELLOW:
+                return TrafficLight.YELLOW
         else: return TrafficLight.UNKNOWN
 
 
