@@ -2,8 +2,6 @@
 <launch>
     <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
 
-    <!--<param name="traffic_light_detector" value="$(find tl_detector)/docker_graph.pb" />-->
-
     <param name="traffic_light_detector" value="$(find tl_detector)/frozen_multi_class_detector.pb" />
 
 </launch>
