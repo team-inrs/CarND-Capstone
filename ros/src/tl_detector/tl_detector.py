@@ -16,8 +16,8 @@ from time import time
 
 
 STATE_COUNT_THRESHOLD = 3
-GREEN = 1
-RED = 2
+GREEN = 2
+RED = 1
 YELLOW = 3
 
 class TLDetector(object):
