@@ -6,7 +6,6 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight, TL_State
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-#from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
@@ -75,7 +74,7 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
         #self.light_classifier = TLClassifier()
-        self.light_classifier = TL_SVM()
+        #self.light_classifier = TL_SVM()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
