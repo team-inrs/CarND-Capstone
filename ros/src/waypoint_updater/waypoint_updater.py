@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightArray
+from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightArray, TL_State
 from std_msgs.msg import Int32
 import math
 
@@ -19,10 +19,9 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS = 300 # Number of waypoints we will publish.
-#LOOKAHEAD_WPS = 25 # Number of waypoints we will publish.
+LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
 
-LIGHT_TO_STOP = 40 # number of waypoints between the tl and the line we need to stop
+LIGHT_TO_STOP = 20 # number of waypoints between the tl and the line we need to stop
 
 
 class WaypointUpdater(object):
@@ -31,11 +30,7 @@ class WaypointUpdater(object):
 
         # A list of all waypoints
         self.all_waypoints = []
-
-        self.current_velocity = 0
         self.target_velocities = []
-        self.stopping_velocities = []
-        self.num_to_stop = 100
 
         # The car's current position
         self.current_pose = None
@@ -48,21 +43,24 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 
         # Subscribers for /traffic_waypoint and /obstacle_waypoint
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
         rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
-        #Subscriber for /vehicle/traffic_lights
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.tl_cb)
+        #Simulator :=> Subscriber for /vehicle/traffic_lights 
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.tl_cb, queue_size=1)
+
+        #for simulator's traffic light
         self.tl_array = []
-        self.light_state = 4
-        self.tstamp = rospy.get_time()
         self.vb_range = 100 #visibility range when the traffic light is within the sensor's detection range.
         self.pre_dist_tl = float('inf')
         self.pre_ind_tl = -1
-        self.tl_pass = False
+
+        #tl_detector :=> Subscriber for /custom_light 
+        rospy.Subscriber('/custom_light', TL_State, self.tl_state_cb, queue_size=1)
+
         self.next_tl = TrafficLight()
         self.pre_tl_state = TrafficLight.UNKNOWN
-        self.yellow_tl_period = 3.0 # USA standard is from 3 to 6 secs, using 3 for conservative driving behavior
+        self.yellow_tl_period = 4.0 # USA standard is from 3 to 6 secs, using 4 for conservative driving behavior
         self.yellow_tl_ts = rospy.get_time()
         self.is_yellow_cnter = False;
 
@@ -79,9 +77,6 @@ class WaypointUpdater(object):
         # Start loop, 10 times a second
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-
-            # wait to move until the traffic light has been discovered
-            #if self.traffic_light_waypoint_index != -1:
 
             # wait until we have knowledge of the car status and track
             if len(self.all_waypoints) > 0 and self.current_pose != None:
@@ -112,21 +107,20 @@ class WaypointUpdater(object):
 
                 # check the status of the tl
                 if self.next_tl.state != TrafficLight.UNKNOWN and self.next_tl.state != TrafficLight.GREEN:
-                    # compute the traffic_light_waypoint_index
+                    # compute the closest waypoint (local) from the traffic lights 
                     closest_distance_tl = float('inf')
                     closest_waypoint_tl = 0
                     for i in range(len(waypoints)):
-                        this_distance = self.distance_to_position(waypoints, i, self.next_tl.pose.pose.position)
+                        this_distance = self.distance_to_position(waypoints, i, self.all_waypoints[self.traffic_light_waypoint_index].pose.pose.position)
                         if this_distance < closest_distance_tl:
                             closest_distance_tl = this_distance
                             closest_waypoint_tl = i
 
-                    #print " closest tl wp= ", closest_waypoint_tl, "num wp ", len(waypoints)
                     wp_num_to_stop = closest_waypoint_tl - LIGHT_TO_STOP
+                    #print "cet_wp",closest_waypoint_tl, "dist", closest_distance_tl,"ind",self.traffic_light_waypoint_index
 
                     #handle red light, ramp the vel down until it stop at LIGHT_TO_STOP waypoint
                     if self.next_tl.state == TrafficLight.RED:
-                        #print "red, closet red ", closest_waypoint_tl
                         waypoints = self.vel_ramp(wp_num_to_stop, waypoints)
 
                     else: #handle yellow light
@@ -147,7 +141,10 @@ class WaypointUpdater(object):
                                 if re_t <= 0:
                                     waypoints = self.vel_ramp(wp_num_to_stop, waypoints)
                                 else:
-                                    if (self.current_vel * re_t) <= closest_distance_tl:  # see if the vehicle can make it through yellow
+                                    #compute the distance to the tl
+                                    dll = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+                                    dist = dll(self.current_pose.position,self.next_tl.pose.pose.position)
+                                    if (self.current_vel * re_t) <= dist:  # see if the vehicle can make it through yellow
                                         waypoints = self.vel_ramp(wp_num_to_stop, waypoints)
                                     else:
                                         #continue as usual
@@ -178,20 +175,21 @@ class WaypointUpdater(object):
 
     def vel_ramp(self, wp_num_to_stop, waypoints):
         if wp_num_to_stop > 0:
-            #print "slow down, num to stop ", wp_num_to_stop
             vel_decr = self.current_vel / wp_num_to_stop
             for i in range(len(waypoints)):
-                if i < wp_num_to_stop - 5: # offset to have sharper ramp
-                    vel = (wp_num_to_stop - i - 5) * vel_decr
+                if i < wp_num_to_stop - 3: # one can offset to have sharper ramp
+                    vel = (wp_num_to_stop - i - 3) * vel_decr
                     if vel > .05:
                         self.set_waypoint_velocity(waypoints, i, vel)
+                        
+                        #dll = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+                        #dist = dll(waypoints[i].pose.pose.position,self.next_tl.pose.pose.position)
+                        #print "i ",i, "vel",vel,"dist",dist,"wp_num_to_stop", wp_num_to_stop
                     else:
                         self.set_waypoint_velocity(waypoints, i, 0)
-                    #print "i", i, "vel ", vel, "current_vel ", self.current_vel
                 else:
                     self.set_waypoint_velocity(waypoints, i, 0)
         else:
-            #print"stop, num to stop ", wp_num_to_stop
             for i in range(len(waypoints)):
                 self.set_waypoint_velocity(waypoints, i, 0)
 
@@ -213,20 +211,17 @@ class WaypointUpdater(object):
             #record waypoint velocity
             self.target_velocities.append(waypoints.waypoints[i].twist.twist.linear.x)
 
-        # test, print out all the waypoint distance and target velocity
-        #print "len ", len(self.all_waypoints)
-        #for i in range(len(self.all_waypoints)-1):
-        #    print "wp: ", i, " distance: ", self.distance(self.all_waypoints,i,i+1), " vel: ", waypoints.waypoints[i].twist.twist.linear.x
-        #self.target_velocity = waypoints.waypoints[0].twist.twist.linear.x
-
-
     def traffic_cb(self, msg): #no one is sending this message. 
         self.traffic_light_waypoint_index = msg.data
-        print "traffic waypint index= ", self.traffic_light_waypoint_index
+        #print "traffic waypint index= ", self.traffic_light_waypoint_index
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message.
         pass
+
+        # callback for receiving TL_state message from tl_detector
+    def tl_state_cb(self,msg):
+        self.next_tl = msg.light
 
         #used in simulation, with informatoin of all the traffic lights and its status
     def tl_cb(self, msg):
@@ -246,20 +241,29 @@ class WaypointUpdater(object):
         if dist - self.pre_dist_tl < 0.05 and ind != self.pre_ind_tl and dist < self.vb_range:
             #assign the to the next_tl
             self.next_tl = self.tl_array[ind]
-            #print "light= ", self.next_tl.state, "dist= ", dist
+            #print "tl_dist", dist, "state ",self.next_tl.state 
+
+            # compute the traffic_light_waypoint_index
+            if len(self.all_waypoints) > 0 and (self.next_tl.state == TrafficLight.YELLOW or self.next_tl.state == TrafficLight.RED):
+                closest_distance_tl = float('inf')
+                closest_waypoint_tl = 0
+                for i in range(len(self.all_waypoints)):
+                    this_distance = self.distance_to_position(self.all_waypoints, i, self.next_tl.pose.pose.position)
+                    if this_distance < closest_distance_tl:
+                        closest_distance_tl = this_distance
+                        closest_waypoint_tl = i
+
+                self.traffic_light_waypoint_index = closest_waypoint_tl
+            else:
+                self.next_tl = TrafficLight()
+                self.next_tl.state = TrafficLight.UNKNOWN
+
         else:
             self.next_tl = TrafficLight()
             self.next_tl.state = TrafficLight.UNKNOWN
 
         if dist - self.pre_dist_tl > 0.01 and dist < self.vb_range: 
             self.pre_ind_tl = ind
-
-        #if self.tl_array[ind].state != self.light_state:
-        #    print "ind= ", ind, " state= ", self.tl_array[ind].state
-        #    print "pre_s=",self.light_state, " cur_s=",self.tl_array[ind].state
-        #    self.light_state = self.tl_array[ind].state
-        #    print "time= ", rospy.get_time() - self.tstamp
-        #    self.tstamp = rospy.get_time()
 
         #update previous distance, used to track incoming traffic light. 
         self.pre_dist_tl = dist

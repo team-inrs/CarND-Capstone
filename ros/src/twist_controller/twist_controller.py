@@ -11,21 +11,21 @@ ONE_MPH = 0.44704
 class Controller(object):
     def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
 
-	# Init controllers
-    	self.pid = PID(1, 0.4, 0)
-    	self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+    # Init controllers
+        self.pid = PID(1, 0.4, 0)
+        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.lowpassFilt = LowPassFilter(0.07, 0.02)
 
         # Save time for delta time calculation
-    	self.previous_time = rospy.get_time()
+        self.previous_time = rospy.get_time()
 
 
     def control(self, linear_velocity, angular_velocity, current_linear_velocity, dbw_enabled):
 
-    	# Run controllers
-    	steering = 0
-    	throttle = 0
-    	if dbw_enabled:
+        # Run controllers
+        steering = 0
+        throttle = 0
+        if dbw_enabled:
             # Get steering only if we are moving forward
             if current_linear_velocity > 0.05:
                 #print(linear_velocity)
@@ -44,17 +44,18 @@ class Controller(object):
         # Calculate braking torque
         brake = 0
         if throttle < 0:
-        	brake = -throttle * 1000
-        	throttle = 0
+            brake = -throttle * 100
+            throttle = 0
 
         # Cap
-        #t = throttle
-        #b = brake
+        t = throttle
+        b = brake
 
         throttle = min(max(throttle, 0.0), 1.0)
-        brake = min(max(brake, 0.0), 1.0)
+        brake = min(max(brake, 0.0), 80.0)
 
         #print "throttle ", throttle, "t_bef ", t, " brake ", brake, "b_bef", b, "vel", linear_velocity, " cur_vel", current_linear_velocity
+        #print "brake ", brake, "b_bef", b, "vel", linear_velocity, " cur_vel", current_linear_velocity
 
         # Log
         #rospy.loginfo("Target velocity: " + str(linear_velocity) + " Current velocity: " + str(current_linear_velocity) + " Throttle: " + str(throttle) + " Brake: " + str(brake))
@@ -74,7 +75,7 @@ ONE_MPH = 0.44704
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
-        wheel_base 	     = kwargs['wheel_base']
+        wheel_base       = kwargs['wheel_base']
         self.steer_ratio = kwargs['steer_ratio']
         min_velocity     = kwargs['min_velocity']
         max_lat_accel    = kwargs['max_lat_accel']
