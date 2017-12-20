@@ -41,10 +41,10 @@ class DBWNode(object):
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
-        wheel_base = rospy.get_param('~wheel_base', 2.8498)
-        steer_ratio = rospy.get_param('~steer_ratio', 14.8)
-        max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
-        max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        self.wheel_base = rospy.get_param('~wheel_base', 2.8498)
+        self.steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        self.max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
+        self.max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
         # Init
         self.current_velocity = 0
@@ -56,8 +56,8 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
         # Create `TwistController` object
-        min_speed = 1
-        self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+        self.min_speed = 1
+        self.controller = Controller(self.wheel_base, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle)
 
         # Subscribe to twist_cmd messages
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_callback)
@@ -78,6 +78,11 @@ class DBWNode(object):
 
         # Save
         self.dbw_enabled = dbw_enabled.data
+
+        
+        # restart PID controller if enabled
+        if self.dbw_enabled:
+             self.controller = Controller(self.wheel_base, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle)
 
     def current_velocity_callback(self, current_velocity):
 
