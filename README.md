@@ -42,7 +42,9 @@ nvidia-docker build . -f Dockerfile.gpu -t capstone-gpu
 
 You can simply start the container or attach to it using the run-cuda or run-devel-cuda script
 ```bash
+
 ./run-cuda.sh
+
 ```
 
 ### Usage
