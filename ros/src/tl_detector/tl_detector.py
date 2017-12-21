@@ -13,6 +13,7 @@ import math
 import numpy as np
 import tensorflow
 from time import time
+from std_msgs.msg import Header
 
 
 STATE_COUNT_THRESHOLD = 3
@@ -129,7 +130,7 @@ class TLDetector(object):
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
         #print(light_wp)
-        print(state)
+        #print(state)
         #print()
 
         '''
@@ -138,25 +139,28 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        our_msg = TL_State
-        our_light = TrafficLight
+        our_msg = TL_State()
+        our_light = TrafficLight()
+        our_light.header = Header()
+        our_light.header.stamp = rospy.Time.now()
+        our_light.header.frame_id = '/world'
         if self.state != state:
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            light_wp = light_wp if (state == TrafficLight.RED or state == TrafficLight.YELLOW) else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
 
-            our_msg.waypoint = Int32(light_wp)
+            our_msg.waypoint = light_wp
             our_light.state = state
             our_msg.light = our_light
             self.custom_state_pub.publish(our_msg)
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
 
-            our_msg.waypoint = Int32(self.last_wp)
+            our_msg.waypoint = self.last_wp
             our_light.state = self.last_state
             our_msg.light = our_light
             self.custom_state_pub.publish(our_msg)
