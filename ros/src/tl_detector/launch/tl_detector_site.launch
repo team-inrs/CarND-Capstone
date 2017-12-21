@@ -2,4 +2,7 @@
 <launch>
     <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
     <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" output="screen" cwd="node"/>
+
+    <param name="traffic_light_detector" value="$(find tl_detector)/frozen_multi_class_detector.pb" />
+
 </launch>
