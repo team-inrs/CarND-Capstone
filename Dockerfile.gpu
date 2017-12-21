@@ -68,17 +68,22 @@ COPY requirements-gpu.txt ./requirements.txt
 RUN pip install -r requirements.txt
 
 # install required ros dependencies
-RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
-RUN apt-get install -y ros-$ROS_DISTRO-pcl-ros
-RUN apt-get install -y ros-$ROS_DISTRO-image-proc
+RUN apt-get update && apt-get install -y \
+    ros-$ROS_DISTRO-cv-bridge \
+    ros-$ROS_DISTRO-pcl-ros \
+    ros-$ROS_DISTRO-image-proc
 
 # socket io
 RUN apt-get install -y netbase
 
-RUN mkdir /capstone
-VOLUME ["/capstone"]
+# development: everyone needs editors and git
+RUN apt-get install -y vim nano git
+
+# udacity capstone
+RUN mkdir /udacity
+VOLUME ["/udacity"]
 VOLUME ["/root/.ros/log/"]
-WORKDIR /capstone/ros
+WORKDIR /udacity/
 
 # setup entrypoint
 COPY ./ros_entrypoint.sh /
