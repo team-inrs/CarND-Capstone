@@ -58,7 +58,7 @@ double PurePursuit::getCmdVelocity(int waypoint) const
 {
   if (current_waypoints_.isEmpty())
   {
-    ROS_INFO_STREAM("waypoint : not loaded path");
+    ROS_INFO_STREAM("No waypoints.");
     return 0;
   }
 
